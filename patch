@@ -1,0 +1,75 @@
+- name: Update 
+  hosts: all
+  gather_facts: false
+  pre_tasks:
+    - name: Install yum-utils (8-9)
+      dnf:
+        name: "yum-utils"
+        state: present
+        disablerepo: "*"
+        enablerepo: "{{ repos }}"
+        #use_backend: dnf4
+      when: rhel_version | int >= 8
+
+    - name: Install yum-utils (7)
+      yum:
+        name: "yum-utils"
+        state: present
+        disablerepo: "*"
+        enablerepo: "{{ repos }}"
+        #use_backend: dnf4
+      when: rhel_version | int == 7
+
+    - name: Complete last transaction (cleanup)
+      command: /usr/sbin/yum-complete-transaction --cleanup-only
+      changed_when: false
+      ignore_errors: yes
+      when: rhel_version | int == 7
+  
+    - name: Remove duplicates
+      command: systemd-run --service-type=oneshot /bin/package-cleanup --cleandupes -y
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Remove RPM DB
+      shell: |
+        rm -f /var/lib/rpm/__db*
+        rpm --rebuilddb
+      changed_when: false
+      ignore_errors: true
+
+    - name: Update Cache (7)
+      yum:
+        update_cache: yes
+        disablerepo: "*"
+        enablerepo: "{{ repos }}"
+      when: rhel_version | int == 7
+
+    - name: Update Cache (8-9)
+      dnf:
+        update_cache: yes
+        disablerepo: "*"
+        enablerepo: "{{ repos }}"
+      when: rhel_version | int >= 8
+
+  tasks:
+    - name: Update (7)
+      shell: |
+        systemd-run -- yum-update -y 
+      register: update_result
+      changed_when: >
+        'Nothing to do.' not in update_result.stdout
+        and 'No pacakges marked for upgrade.' not in update_result.stdout
+      when: rhel_version | int == 7
+
+    - name: Update (8-9)
+      shell: |
+        systemd-run --wait --pipe -- dnf update -y 
+      register: update_result
+      changed_when: >
+        'Nothing to do.' not in update_result.stdout
+        and 'No pacakges marked for upgrade.' not in update_result.stdout
+      when: rhel_version | int >= 8
+
+  post_tasks:
+    
