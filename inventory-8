@@ -1,0 +1,7 @@
+[all:vars]
+rhel_version=8
+repos=AppStream,BaseOS
+#extrarepo=Code-Ready-Builder
+
+[Room1]
+workstation1
