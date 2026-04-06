@@ -1,1 +1,32 @@
 - name: Deploy clam av defs
+  hosts: all
+  gather_facts: false
+  vars:
+    clamdb: "/var/lib/clamav"
+    clamdb_9: "/usr/local/share/clamav"
+    clamfiles:
+      - daily.cvd
+      - main.cvd
+      - bytecode.cvd
+  tasks:
+    - name: copy to db_dir 9
+      copy:
+        src: "{{ item }}"
+        dest: "{{ clamdb_9 }}/{{ item }}"
+        mode: '0644'
+        owner: clamupdate
+        group: clamupdate
+        force: true
+      loop: "{{ clamfiles }}"
+      when: rhel_version | int == 9
+
+    - name: copy to db_dir
+      copy:
+        src: "{{ item }}"
+        dest: "{{ clamdb }}/{{ item }}"
+        mode: '0644'
+        owner: clamupdate
+        group: clamupdate
+        force: true
+      loop: "{{ clamfiles }}"
+      when: rhel_version | int != 9
