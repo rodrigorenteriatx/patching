@@ -71,5 +71,4 @@
         and 'No pacakges marked for upgrade.' not in update_result.stdout
       when: rhel_version | int >= 8
 
-  post_tasks:
-    
+
